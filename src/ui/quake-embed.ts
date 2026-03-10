@@ -53,6 +53,10 @@ function formatTsunamiStatus(status: string | null): string {
 }
 
 function formatStatusLabel(event: QuakeEvent): string {
+  if (event.status === "image_unavailable") {
+    return "画像未取得";
+  }
+
   if (event.status === "final") {
     return "詳細確定";
   }
@@ -68,11 +72,31 @@ function formatStatusLabel(event: QuakeEvent): string {
   return "速報";
 }
 
+function getEmbedColor(event: QuakeEvent): number {
+  if (event.status === "image_unavailable") {
+    return 0x868e96;
+  }
+
+  if (event.status === "final") {
+    return 0xd62828;
+  }
+
+  if (event.status === "detailed") {
+    if (event.issueType === "Destination" || event.issueType === "ScaleAndDestination") {
+      return 0x1971c2;
+    }
+
+    return 0xe67700;
+  }
+
+  return 0xff8c00;
+}
+
 export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): EmbedBuilder {
   const title = event.status === "detected" ? "地震速報" : "地震情報";
   const embed = new EmbedBuilder()
     .setTitle(title)
-    .setColor(event.status === "detected" ? 0xff8c00 : 0xd62828)
+    .setColor(getEmbedColor(event))
     .addFields(
       { name: "発生時刻", value: formatDateTime(event.occurredAt), inline: true },
       { name: "震源", value: event.hypocenterName ?? "不明", inline: true },
