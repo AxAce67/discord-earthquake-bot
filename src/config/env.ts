@@ -28,7 +28,9 @@ const envSchema = z.object({
   YAHOO_LIST_URL: z.string().url().default("https://typhoon.yahoo.co.jp/weather/jp/earthquake/list/"),
   YAHOO_BASE_URL: z.string().url().default("https://typhoon.yahoo.co.jp"),
   YAHOO_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
-  YAHOO_IMAGE_RETRY_DELAYS_MS: commaSeparatedNumbers.default([5000, 15000, 30000]),
+  YAHOO_IMAGE_RETRY_DELAYS_MS: commaSeparatedNumbers.default([
+    2000, 4000, 6000, 8000, 10000, 15000, 20000, 30000, 45000, 60000, 90000, 120000
+  ]),
   AUTHORITATIVE_RESOLVE_DELAYS_MS: commaSeparatedNumbers
 });
 
