@@ -9,7 +9,7 @@ export class JmaClient {
   ) {}
 
   async fetchRecentDetailedQuakes(limit = 20): Promise<RawP2PQuakeEvent[]> {
-    const url = new URL("/jma/quake", this.config.P2PQUAKE_HTTP_BASE_URL);
+    const url = new URL("jma/quake", this.config.P2PQUAKE_HTTP_BASE_URL.endsWith("/") ? this.config.P2PQUAKE_HTTP_BASE_URL : `${this.config.P2PQUAKE_HTTP_BASE_URL}/`);
     url.searchParams.set("limit", String(limit));
 
     const response = await fetch(url, {

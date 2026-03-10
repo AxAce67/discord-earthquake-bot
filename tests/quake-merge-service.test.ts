@@ -87,4 +87,57 @@ describe("QuakeMergeService", () => {
     expect(merged.event.status).toBe("final");
     expect(merged.event.sourcesSeen).toContain("jma");
   });
+
+  it("merges a later destination update into an earlier scale prompt event", async () => {
+    const first = await merge.ingestFastEvent(
+      buildRawEvent({
+        earthquake: {
+          time: "2026/03/10 15:28:00",
+          maxScale: 40,
+          domesticTsunami: "Checking",
+          foreignTsunami: "Unknown",
+          hypocenter: {
+            name: "",
+            latitude: -200,
+            longitude: -200,
+            depth: -1,
+            magnitude: -1
+          }
+        },
+        issue: {
+          source: "気象庁",
+          time: "2026/03/10 15:29:44",
+          type: "ScalePrompt"
+        }
+      })
+    );
+
+    const second = await merge.ingestFastEvent(
+      buildRawEvent({
+        earthquake: {
+          time: "2026/03/10 15:28:00",
+          maxScale: -1,
+          domesticTsunami: "None",
+          foreignTsunami: "Unknown",
+          hypocenter: {
+            name: "福島県沖",
+            latitude: 37.4,
+            longitude: 141.1,
+            depth: 60,
+            magnitude: 4.6
+          }
+        },
+        issue: {
+          source: "気象庁",
+          time: "2026/03/10 15:31:02",
+          type: "Destination"
+        }
+      })
+    );
+
+    expect(second.isNew).toBe(false);
+    expect(second.event.id).toBe(first.event.id);
+    expect(second.event.hypocenterName).toBe("福島県沖");
+    expect(second.event.depthKm).toBe(60);
+  });
 });

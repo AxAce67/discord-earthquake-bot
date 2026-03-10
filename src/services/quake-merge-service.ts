@@ -14,6 +14,15 @@ function parseP2PQuakeTimestamp(value: string): number {
   return new Date(withTimezone).getTime();
 }
 
+function normalizeHypocenterName(value: string | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 function mapDraftStatus(issueType: string | null): QuakeEvent["status"] {
   switch (issueType) {
     case "ScalePrompt":
@@ -39,7 +48,7 @@ function statusRank(status: QuakeEvent["status"]): number {
     case "final":
       return 3;
     case "image_unavailable":
-      return 4;
+      return 0;
     default:
       return 0;
   }
@@ -50,7 +59,7 @@ export function createDraftFromRawP2PQuakeEvent(
   source: QuakeSourceName
 ): QuakeEventDraft {
   const occurredAt = parseP2PQuakeTimestamp(raw.earthquake?.time ?? raw.time);
-  const hypocenterName = raw.earthquake?.hypocenter?.name ?? null;
+  const hypocenterName = normalizeHypocenterName(raw.earthquake?.hypocenter?.name);
   const latitude =
     raw.earthquake?.hypocenter?.latitude !== undefined && raw.earthquake.hypocenter.latitude > -200
       ? raw.earthquake.hypocenter.latitude
@@ -148,7 +157,6 @@ export class QuakeMergeService {
     if (!event.sourcesSeen.includes("yahoo")) {
       event.sourcesSeen = [...event.sourcesSeen, "yahoo"];
     }
-    event.status = event.status === "final" ? "final" : "image_unavailable";
     event.updatedAt = Date.now();
     await this.events.save(event);
     return event;
@@ -195,8 +203,20 @@ export class QuakeMergeService {
           draft.longitude !== null &&
           Math.abs(candidate.latitude - draft.latitude) <= 0.3 &&
           Math.abs(candidate.longitude - draft.longitude) <= 0.3;
+        const sameOccurredAt = Math.abs(candidate.occurredAt - draft.occurredAt) <= 60_000;
+        const compatibleIntensity =
+          candidate.maxIntensity === draft.maxIntensity ||
+          candidate.maxIntensity === null ||
+          draft.maxIntensity === null;
+        const missingLocationBridge =
+          candidate.hypocenterName === null ||
+          draft.hypocenterName === null ||
+          candidate.latitude === null ||
+          draft.latitude === null ||
+          candidate.longitude === null ||
+          draft.longitude === null;
 
-        return sameName || nearCoordinates;
+        return sameName || nearCoordinates || (sameOccurredAt && compatibleIntensity && missingLocationBridge);
       }) ?? null
     );
   }
