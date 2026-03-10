@@ -19,6 +19,10 @@ npm run register:commands
 npm run dev
 ```
 
+### 調査モード
+
+P2PQuake の受信イベントを広く観測したいときは、`.env` で `P2PQUAKE_LOG_INCOMING=true` を設定すると、受信した `code` と `issue.type` をログ出力できます。
+
 ## Slash コマンド
 
 - `/quake setup`

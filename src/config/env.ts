@@ -24,6 +24,7 @@ const envSchema = z.object({
   P2PQUAKE_HTTP_BASE_URL: z.string().url().default("https://api.p2pquake.net/v2"),
   P2PQUAKE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   P2PQUAKE_RECONNECT_DELAY_MS: z.coerce.number().int().positive().default(5000),
+  P2PQUAKE_LOG_INCOMING: z.coerce.boolean().default(false),
   YAHOO_LIST_URL: z.string().url().default("https://typhoon.yahoo.co.jp/weather/jp/earthquake/list/"),
   YAHOO_BASE_URL: z.string().url().default("https://typhoon.yahoo.co.jp"),
   YAHOO_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),

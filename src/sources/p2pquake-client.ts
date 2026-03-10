@@ -86,6 +86,22 @@ export class P2PQuakeClient {
     }
 
     const event = parsed as RawP2PQuakeEvent;
+    if (this.config.P2PQUAKE_LOG_INCOMING) {
+      this.logger.info(
+        {
+          code: event.code,
+          id: event.id ?? null,
+          issueType: event.issue?.type ?? null,
+          issueSource: event.issue?.source ?? null,
+          earthquakeTime: event.earthquake?.time ?? null,
+          receivedTime: event.time ?? null,
+          hypocenterName: event.earthquake?.hypocenter?.name ?? null,
+          maxScale: event.earthquake?.maxScale ?? null
+        },
+        "Observed incoming P2PQuake websocket event"
+      );
+    }
+
     if (event.code !== 551 || !event.earthquake || !event.issue) {
       return;
     }
