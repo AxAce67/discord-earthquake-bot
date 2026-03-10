@@ -73,31 +73,39 @@ function formatStatusLabel(event: QuakeEvent): string {
 }
 
 function getEmbedColor(event: QuakeEvent): number {
-  if (event.maxIntensity === null) {
+  const isUnconfirmed =
+    event.status === "detected" ||
+    event.hypocenterName === null ||
+    event.magnitude === null ||
+    event.depthKm === null;
+
+  if (isUnconfirmed) {
     return 0x868e96;
   }
 
-  if (event.maxIntensity >= 60) {
+  const intensity = event.maxIntensity ?? 0;
+
+  if (intensity >= 60) {
     return 0x9c1c1c;
   }
 
-  if (event.maxIntensity >= 50) {
+  if (intensity >= 50) {
     return 0xc92a2a;
   }
 
-  if (event.maxIntensity >= 45) {
+  if (intensity >= 45) {
     return 0xd9480f;
   }
 
-  if (event.maxIntensity >= 40) {
+  if (intensity >= 40) {
     return 0xf08c00;
   }
 
-  if (event.maxIntensity >= 30) {
+  if (intensity >= 30) {
     return 0xf59f00;
   }
 
-  if (event.maxIntensity >= 20) {
+  if (intensity >= 20) {
     return 0x2b8a3e;
   }
 
