@@ -52,6 +52,22 @@ function formatTsunamiStatus(status: string | null): string {
   }
 }
 
+function formatStatusLabel(event: QuakeEvent): string {
+  if (event.status === "final") {
+    return "詳細確定";
+  }
+
+  if (event.status === "detailed") {
+    if (event.issueType === "Destination" || event.issueType === "ScaleAndDestination") {
+      return "震源確定";
+    }
+
+    return "更新";
+  }
+
+  return "速報";
+}
+
 export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): EmbedBuilder {
   const title = event.status === "detected" ? "地震速報" : "地震情報";
   const embed = new EmbedBuilder()
@@ -64,7 +80,7 @@ export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): Emb
       { name: "マグニチュード", value: formatMagnitude(event.magnitude), inline: true },
       { name: "深さ", value: formatDepth(event.depthKm), inline: true },
       { name: "津波", value: formatTsunamiStatus(event.tsunamiStatus), inline: true },
-      { name: "状態", value: event.status === "final" ? "確定" : event.status === "detailed" ? "更新" : "速報", inline: true },
+      { name: "状態", value: formatStatusLabel(event), inline: true },
       { name: "ソース", value: event.sourcesSeen.join(", "), inline: true }
     )
     .setFooter({ text: `event_id: ${event.id}` })

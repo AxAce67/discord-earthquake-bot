@@ -6,7 +6,7 @@ async function main(): Promise<void> {
 
   interactionHandler.register();
 
-  client.once("ready", () => {
+  client.once("clientReady", () => {
     logger.info({ user: client.user?.tag }, "Discord quake bot is ready");
     ingestService.start();
   });

@@ -1,6 +1,8 @@
 import type pino from "pino";
-import type { Client, Interaction } from "discord.js";
+import { MessageFlags, type Client, type Interaction } from "discord.js";
 import { QuakeCommandHandler } from "../commands/quake-command-handler.js";
+
+const EPHEMERAL_FLAG = MessageFlags.Ephemeral as const;
 
 export class InteractionHandler {
   constructor(
@@ -22,7 +24,7 @@ export class InteractionHandler {
         }
       } catch (error) {
         this.logger.error({ err: error, commandName: interaction.commandName }, "Slash command failed");
-        const payload = { content: "コマンドの処理に失敗しました。", ephemeral: true as const };
+        const payload = { content: "コマンドの処理に失敗しました。", flags: EPHEMERAL_FLAG };
         if (interaction.deferred || interaction.replied) {
           await interaction.followUp(payload).catch(() => undefined);
         } else {

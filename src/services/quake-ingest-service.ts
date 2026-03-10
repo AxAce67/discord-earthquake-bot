@@ -11,6 +11,7 @@ import { QuakeNotificationService } from "./quake-notification-service.js";
 export class QuakeIngestService {
   private readonly authoritativeTimers = new Map<string, NodeJS.Timeout[]>();
   private readonly imageTimers = new Map<string, NodeJS.Timeout>();
+  private readonly authoritativeFailuresWarned = new Set<string>();
 
   constructor(
     private readonly config: AppConfig,
@@ -85,13 +86,20 @@ export class QuakeIngestService {
 
   private async resolveAuthoritative(eventId: string, raw: RawP2PQuakeEvent): Promise<void> {
     const detailed = await this.jmaClient.findMatchingDetailedQuake(raw).catch((error) => {
-      this.logger.warn({ err: error, eventId }, "Failed to resolve authoritative quake details");
+      if (this.authoritativeFailuresWarned.has(eventId)) {
+        this.logger.debug({ err: error, eventId }, "Failed to resolve authoritative quake details");
+      } else {
+        this.authoritativeFailuresWarned.add(eventId);
+        this.logger.warn({ err: error, eventId }, "Failed to resolve authoritative quake details");
+      }
       return null;
     });
 
     if (!detailed) {
       return;
     }
+
+    this.authoritativeFailuresWarned.delete(eventId);
 
     const { event, changed } = await this.mergeService.mergeAuthoritativeEvent(eventId, detailed);
     if (changed) {

@@ -1,6 +1,7 @@
 import {
   ChannelType,
   EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type RESTPostAPIChatInputApplicationCommandsJSONBody,
@@ -9,6 +10,8 @@ import {
 import { QuakeConfigService } from "../services/quake-config-service.js";
 import { QuakeEventRepository } from "../storage/repositories.js";
 import { QuakeNotificationService } from "../services/quake-notification-service.js";
+
+const EPHEMERAL_FLAG = MessageFlags.Ephemeral as const;
 
 export const quakeCommands = [
   new SlashCommandBuilder()
@@ -102,7 +105,7 @@ export class QuakeCommandHandler {
     if (!interaction.guildId || interaction.channel?.type !== ChannelType.GuildText) {
       await interaction.reply({
         content: "このコマンドはサーバーのテキストチャンネルでのみ使えます。",
-        ephemeral: true
+        flags: EPHEMERAL_FLAG
       });
       return;
     }
@@ -110,7 +113,7 @@ export class QuakeCommandHandler {
     const setting = await this.configService.setup(interaction.guildId, interaction.channelId);
     await interaction.reply({
       content: `このチャンネルを地震通知チャンネルに設定しました。\n有効: ${setting.enabled ? "はい" : "いいえ"}`,
-      ephemeral: true
+      flags: EPHEMERAL_FLAG
     });
   }
 
@@ -118,7 +121,7 @@ export class QuakeCommandHandler {
     if (!interaction.guildId) {
       await interaction.reply({
         content: "このコマンドはサーバー内でのみ使えます。",
-        ephemeral: true
+        flags: EPHEMERAL_FLAG
       });
       return;
     }
@@ -126,7 +129,7 @@ export class QuakeCommandHandler {
     await this.configService.disable(interaction.guildId);
     await interaction.reply({
       content: "このサーバーでの地震通知を無効化しました。",
-      ephemeral: true
+      flags: EPHEMERAL_FLAG
     });
   }
 
@@ -134,7 +137,7 @@ export class QuakeCommandHandler {
     if (!interaction.guildId) {
       await interaction.reply({
         content: "このコマンドはサーバー内でのみ使えます。",
-        ephemeral: true
+        flags: EPHEMERAL_FLAG
       });
       return;
     }
@@ -151,14 +154,14 @@ export class QuakeCommandHandler {
         { name: "ソース", value: "P2PQuake 優先 / 詳細は JMA 補完", inline: true }
       );
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: EPHEMERAL_FLAG });
   }
 
   private async handleTest(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel?.type !== ChannelType.GuildText) {
       await interaction.reply({
         content: "このコマンドはサーバーのテキストチャンネルでのみ使えます。",
-        ephemeral: true
+        flags: EPHEMERAL_FLAG
       });
       return;
     }
@@ -166,7 +169,7 @@ export class QuakeCommandHandler {
     await this.notificationService.sendTestNotification(interaction.channel as TextChannel);
     await interaction.reply({
       content: "テスト通知を送信しました。",
-      ephemeral: true
+      flags: EPHEMERAL_FLAG
     });
   }
 
@@ -177,7 +180,7 @@ export class QuakeCommandHandler {
     if (events.length === 0) {
       await interaction.reply({
         content: "保存されている地震情報はまだありません。",
-        ephemeral: true
+        flags: EPHEMERAL_FLAG
       });
       return;
     }
@@ -192,7 +195,7 @@ export class QuakeCommandHandler {
       });
     }
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: EPHEMERAL_FLAG });
   }
 }
 
