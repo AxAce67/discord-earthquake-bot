@@ -59,6 +59,7 @@ function mapNotification(row: Record<string, unknown>): QuakeNotificationRecord 
     messageId: String(row.message_id),
     lastRenderHash: String(row.last_render_hash),
     imageUrl: row.image_url ? String(row.image_url) : null,
+    sourceUrl: row.source_url ? String(row.source_url) : null,
     imageStatus: String(row.image_status) as QuakeNotificationRecord["imageStatus"],
     updatedAt: Number(row.updated_at)
   };
@@ -259,14 +260,16 @@ export class QuakeNotificationRepository {
         message_id,
         last_render_hash,
         image_url,
+        source_url,
         image_status,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(event_id, guild_id) DO UPDATE SET
         channel_id = excluded.channel_id,
         message_id = excluded.message_id,
         last_render_hash = excluded.last_render_hash,
         image_url = excluded.image_url,
+        source_url = excluded.source_url,
         image_status = excluded.image_status,
         updated_at = excluded.updated_at`,
       record.eventId,
@@ -275,6 +278,7 @@ export class QuakeNotificationRepository {
       record.messageId,
       record.lastRenderHash,
       record.imageUrl,
+      record.sourceUrl,
       record.imageStatus,
       record.updatedAt
     );

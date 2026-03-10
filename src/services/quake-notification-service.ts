@@ -42,6 +42,14 @@ export class QuakeNotificationService {
   ) {}
 
   async notifyForEvent(event: QuakeEvent, imageUrl: string | null): Promise<void> {
+    await this.notifyForEventWithSource(event, imageUrl, null);
+  }
+
+  async notifyForEventWithSource(
+    event: QuakeEvent,
+    imageUrl: string | null,
+    sourceUrl: string | null
+  ): Promise<void> {
     const guildSettings = await this.settings.listEnabled();
 
     for (const setting of guildSettings) {
@@ -49,7 +57,7 @@ export class QuakeNotificationService {
         continue;
       }
 
-      await this.sendOrUpdate(setting.guildId, setting.channelId, event, imageUrl);
+      await this.sendOrUpdate(setting.guildId, setting.channelId, event, imageUrl, sourceUrl);
     }
   }
 
@@ -80,7 +88,13 @@ export class QuakeNotificationService {
     await channel.send({ embeds: [buildQuakeEmbed(event, null)] });
   }
 
-  private async sendOrUpdate(guildId: string, channelId: string, event: QuakeEvent, imageUrl: string | null): Promise<void> {
+  private async sendOrUpdate(
+    guildId: string,
+    channelId: string,
+    event: QuakeEvent,
+    imageUrl: string | null,
+    sourceUrl: string | null
+  ): Promise<void> {
     const channel = await this.client.channels.fetch(channelId).catch(() => null);
     if (!isSendableChannel(channel)) {
       this.logger.warn({ guildId, channelId }, "Configured quake notification channel is not sendable");
@@ -89,10 +103,17 @@ export class QuakeNotificationService {
 
     const existing = await this.notifications.load(event.id, guildId);
     const updateReason = determineUpdateReason(event, existing, imageUrl);
-    const embed = buildQuakeEmbed(event, imageUrl, updateReason);
+    const effectiveImageUrl = imageUrl ?? existing?.imageUrl ?? null;
+    const effectiveSourceUrl = sourceUrl ?? existing?.sourceUrl ?? null;
+    const embed = buildQuakeEmbed(event, effectiveImageUrl, updateReason, effectiveSourceUrl);
     const renderHash = createHash("sha256").update(JSON.stringify(embed.toJSON())).digest("hex");
 
-    if (existing && existing.lastRenderHash === renderHash && existing.imageUrl === imageUrl) {
+    if (
+      existing &&
+      existing.lastRenderHash === renderHash &&
+      existing.imageUrl === effectiveImageUrl &&
+      existing.sourceUrl === effectiveSourceUrl
+    ) {
       return;
     }
 
@@ -104,8 +125,9 @@ export class QuakeNotificationService {
         channelId,
         messageId: created.id,
         lastRenderHash: renderHash,
-        imageUrl,
-        imageStatus: imageUrl ? "attached" : "pending",
+        imageUrl: effectiveImageUrl,
+        sourceUrl: effectiveSourceUrl,
+        imageStatus: effectiveImageUrl ? "attached" : "pending",
         updatedAt: Date.now()
       });
       this.logger.info({ guildId, eventId: event.id, messageId: created.id }, "Sent quake notification");
@@ -121,8 +143,9 @@ export class QuakeNotificationService {
         channelId,
         messageId: recreated.id,
         lastRenderHash: renderHash,
-        imageUrl,
-        imageStatus: imageUrl ? "attached" : existing.imageStatus,
+        imageUrl: effectiveImageUrl,
+        sourceUrl: effectiveSourceUrl,
+        imageStatus: effectiveImageUrl ? "attached" : existing.imageStatus,
         updatedAt: Date.now()
       });
       this.logger.warn({ guildId, eventId: event.id }, "Notification message missing; recreated");
@@ -136,8 +159,9 @@ export class QuakeNotificationService {
       channelId,
       messageId: message.id,
       lastRenderHash: renderHash,
-      imageUrl,
-      imageStatus: imageUrl ? "attached" : existing.imageStatus,
+      imageUrl: effectiveImageUrl,
+      sourceUrl: effectiveSourceUrl,
+      imageStatus: effectiveImageUrl ? "attached" : existing.imageStatus,
       updatedAt: Date.now()
     });
     this.logger.info({ guildId, eventId: event.id, messageId: message.id }, "Updated quake notification");

@@ -61,6 +61,7 @@ export async function createDatabase(databaseUrl: string): Promise<SqliteDatabas
       message_id TEXT NOT NULL,
       last_render_hash TEXT NOT NULL,
       image_url TEXT,
+      source_url TEXT,
       image_status TEXT NOT NULL,
       updated_at INTEGER NOT NULL,
       PRIMARY KEY (event_id, guild_id)
@@ -72,6 +73,11 @@ export async function createDatabase(databaseUrl: string): Promise<SqliteDatabas
       updated_at INTEGER NOT NULL
     );
   `);
+
+  const notificationColumns = await db.all<{ name: string }[]>(`PRAGMA table_info(quake_notifications)`);
+  if (!notificationColumns.some((column) => column.name === "source_url")) {
+    await db.exec(`ALTER TABLE quake_notifications ADD COLUMN source_url TEXT`);
+  }
 
   return db;
 }

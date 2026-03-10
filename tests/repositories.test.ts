@@ -72,11 +72,13 @@ describe("repositories", () => {
       messageId: "message-1",
       lastRenderHash: "hash",
       imageUrl: null,
+      sourceUrl: "https://example.com/quake/1",
       imageStatus: "pending",
       updatedAt: Date.now()
     });
 
     const stored = await notifications.load("event-1", "guild-1");
     expect(stored?.messageId).toBe("message-1");
+    expect(stored?.sourceUrl).toBe("https://example.com/quake/1");
   });
 });

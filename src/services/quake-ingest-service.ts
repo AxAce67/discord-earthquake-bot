@@ -152,7 +152,7 @@ export class QuakeIngestService {
     );
     const updated = await this.mergeService.markImageAttached(eventId);
     if (updated) {
-      await this.notificationService.notifyForEvent(updated, result.imageUrl);
+      await this.notificationService.notifyForEventWithSource(updated, result.imageUrl, result.detailUrl);
     }
 
     this.imageResolutionCompleted.add(eventId);

@@ -112,10 +112,31 @@ function getEmbedColor(event: QuakeEvent): number {
   return 0x1c7ed6;
 }
 
+function buildSourceFieldValue(event: QuakeEvent, sourceUrl: string | null): string {
+  const links: string[] = [];
+
+  if (event.sourcesSeen.includes("p2pquake")) {
+    links.push("[P2PQuake](https://www.p2pquake.net/)");
+  }
+
+  if (sourceUrl) {
+    links.push(`[Yahoo 地震詳細](${sourceUrl})`);
+  } else if (event.sourcesSeen.includes("yahoo")) {
+    links.push("[Yahoo 地震情報](https://typhoon.yahoo.co.jp/weather/jp/earthquake/list/)");
+  }
+
+  if (event.sourcesSeen.includes("jma")) {
+    links.push("[気象庁](https://www.jma.go.jp/)");
+  }
+
+  return links.length > 0 ? links.join(" / ") : "不明";
+}
+
 export function buildQuakeEmbed(
   event: QuakeEvent,
   imageUrl: string | null,
-  updateReason: string = "情報更新"
+  updateReason: string = "情報更新",
+  sourceUrl: string | null = null
 ): EmbedBuilder {
   const title = event.status === "detected" ? "地震速報" : "地震情報";
   const embed = new EmbedBuilder()
@@ -130,7 +151,7 @@ export function buildQuakeEmbed(
       { name: "津波", value: formatTsunamiStatus(event.tsunamiStatus), inline: true },
       { name: "状態", value: formatStatusLabel(event), inline: true },
       { name: "更新内容", value: updateReason, inline: true },
-      { name: "ソース", value: event.sourcesSeen.join(", "), inline: true }
+      { name: "ソース", value: buildSourceFieldValue(event, sourceUrl), inline: false }
     )
     .setFooter({ text: `event_id: ${event.id}` })
     .setTimestamp(new Date(event.updatedAt));

@@ -45,6 +45,7 @@ export interface QuakeNotificationRecord {
   messageId: MessageId;
   lastRenderHash: string;
   imageUrl: string | null;
+  sourceUrl: string | null;
   imageStatus: QuakeImageStatus;
   updatedAt: number;
 }
