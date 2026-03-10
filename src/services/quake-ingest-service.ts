@@ -10,8 +10,9 @@ import { QuakeNotificationService } from "./quake-notification-service.js";
 
 export class QuakeIngestService {
   private readonly authoritativeTimers = new Map<string, NodeJS.Timeout[]>();
-  private readonly imageTimers = new Map<string, NodeJS.Timeout>();
+  private readonly imageTimers = new Map<string, NodeJS.Timeout[]>();
   private readonly authoritativeFailuresWarned = new Set<string>();
+  private readonly imageResolutionCompleted = new Set<string>();
 
   constructor(
     private readonly config: AppConfig,
@@ -38,10 +39,13 @@ export class QuakeIngestService {
     }
     this.authoritativeTimers.clear();
 
-    for (const timer of this.imageTimers.values()) {
-      clearTimeout(timer);
+    for (const timers of this.imageTimers.values()) {
+      for (const timer of timers) {
+        clearTimeout(timer);
+      }
     }
     this.imageTimers.clear();
+    this.imageResolutionCompleted.clear();
 
     await this.p2pquakeClient.stop();
   }
@@ -76,12 +80,14 @@ export class QuakeIngestService {
       return;
     }
 
-    const timer = setTimeout(() => {
-      this.imageTimers.delete(eventId);
-      void this.resolveYahooImage(eventId);
-    }, 5000);
+    const timers = this.config.YAHOO_IMAGE_RETRY_DELAYS_MS.map((delayMs, index, allDelays) =>
+      setTimeout(() => {
+        const isFinalAttempt = index === allDelays.length - 1;
+        void this.resolveYahooImage(eventId, index + 1, isFinalAttempt);
+      }, delayMs)
+    );
 
-    this.imageTimers.set(eventId, timer);
+    this.imageTimers.set(eventId, timers);
   }
 
   private async resolveAuthoritative(eventId: string, raw: RawP2PQuakeEvent): Promise<void> {
@@ -107,26 +113,61 @@ export class QuakeIngestService {
     }
   }
 
-  private async resolveYahooImage(eventId: string): Promise<void> {
+  private async resolveYahooImage(eventId: string, attempt: number, isFinalAttempt: boolean): Promise<void> {
+    if (this.imageResolutionCompleted.has(eventId)) {
+      return;
+    }
+
     const event = await this.events.findById(eventId);
     if (!event) {
+      this.clearImageTimers(eventId);
       return;
     }
 
     const result = await this.yahooClient.findImage(event);
     if (!result.imageUrl) {
-      this.logger.info({ eventId, detailUrl: result.detailUrl }, "Yahoo quake image was not available");
-      const updated = await this.mergeService.markImageUnavailable(eventId);
-      if (updated) {
-        await this.notificationService.notifyForEvent(updated, null);
+      if (isFinalAttempt) {
+        this.logger.info(
+          { eventId, detailUrl: result.detailUrl, attempt },
+          "Yahoo quake image was not available"
+        );
+        const updated = await this.mergeService.markImageUnavailable(eventId);
+        if (updated) {
+          await this.notificationService.notifyForEvent(updated, null);
+        }
+        this.imageResolutionCompleted.add(eventId);
+        this.clearImageTimers(eventId);
+      } else {
+        this.logger.debug(
+          { eventId, detailUrl: result.detailUrl, attempt },
+          "Yahoo quake image not available yet, retrying later"
+        );
       }
       return;
     }
 
-    this.logger.info({ eventId, detailUrl: result.detailUrl, imageUrl: result.imageUrl }, "Attached Yahoo quake image");
+    this.logger.info(
+      { eventId, detailUrl: result.detailUrl, imageUrl: result.imageUrl, attempt },
+      "Attached Yahoo quake image"
+    );
     const updated = await this.mergeService.markImageAttached(eventId);
     if (updated) {
       await this.notificationService.notifyForEvent(updated, result.imageUrl);
     }
+
+    this.imageResolutionCompleted.add(eventId);
+    this.clearImageTimers(eventId);
+  }
+
+  private clearImageTimers(eventId: string): void {
+    const timers = this.imageTimers.get(eventId);
+    if (!timers) {
+      return;
+    }
+
+    for (const timer of timers) {
+      clearTimeout(timer);
+    }
+    this.imageTimers.delete(eventId);
   }
 }
