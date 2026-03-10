@@ -103,6 +103,10 @@ export function createDraftFromRawP2PQuakeEvent(
   };
 }
 
+function buildFallbackEventId(draft: QuakeEventDraft): string {
+  return `quake:${draft.canonicalEventId ?? draft.temporaryEventKey}`;
+}
+
 export class QuakeMergeService {
   constructor(
     private readonly events: QuakeEventRepository,
@@ -112,7 +116,7 @@ export class QuakeMergeService {
   async ingestFastEvent(raw: RawP2PQuakeEvent): Promise<{ event: QuakeEvent; isNew: boolean; changed: boolean }> {
     const draft = createDraftFromRawP2PQuakeEvent(raw, "p2pquake");
     const existing = await this.findBestMatch(draft);
-    const merged = this.merge(existing, draft, raw.id);
+    const merged = this.merge(existing, draft, raw.id ?? buildFallbackEventId(draft));
     await this.events.save(merged);
 
     const changed = !existing || hasEventMeaningfulChanges(existing, merged);

@@ -73,7 +73,7 @@ export interface RawP2PQuakeEarthquake {
 }
 
 export interface RawP2PQuakeEvent {
-  id: string;
+  id?: string;
   code: number;
   time: string;
   issue?: RawP2PQuakeIssue;

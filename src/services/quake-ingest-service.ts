@@ -107,6 +107,7 @@ export class QuakeIngestService {
 
     const result = await this.yahooClient.findImage(event);
     if (!result.imageUrl) {
+      this.logger.info({ eventId, detailUrl: result.detailUrl }, "Yahoo quake image was not available");
       const updated = await this.mergeService.markImageUnavailable(eventId);
       if (updated) {
         await this.notificationService.notifyForEvent(updated, null);
@@ -114,6 +115,7 @@ export class QuakeIngestService {
       return;
     }
 
+    this.logger.info({ eventId, detailUrl: result.detailUrl, imageUrl: result.imageUrl }, "Attached Yahoo quake image");
     const updated = await this.mergeService.markImageAttached(eventId);
     if (updated) {
       await this.notificationService.notifyForEvent(updated, result.imageUrl);
