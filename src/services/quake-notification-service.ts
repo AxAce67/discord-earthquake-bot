@@ -2,11 +2,35 @@ import { createHash } from "node:crypto";
 import type pino from "pino";
 import { ChannelType, type Client, type TextChannel } from "discord.js";
 import { GuildSettingsRepository, QuakeNotificationRepository } from "../storage/repositories.js";
-import type { QuakeEvent } from "../types/quake.js";
+import type { QuakeEvent, QuakeNotificationRecord } from "../types/quake.js";
 import { buildQuakeEmbed } from "../ui/quake-embed.js";
 
 function isSendableChannel(channel: unknown): channel is TextChannel {
   return !!channel && typeof channel === "object" && "type" in channel && channel.type === ChannelType.GuildText;
+}
+
+function determineUpdateReason(
+  event: QuakeEvent,
+  existing: QuakeNotificationRecord | null,
+  imageUrl: string | null
+): string {
+  if (!existing) {
+    return "初報";
+  }
+
+  if (imageUrl && existing.imageUrl !== imageUrl) {
+    return "画像追加";
+  }
+
+  if (event.issueType === "Destination" || event.issueType === "ScaleAndDestination") {
+    return "震源更新";
+  }
+
+  if (event.status === "final" || event.issueType === "DetailScale") {
+    return "詳細更新";
+  }
+
+  return "情報更新";
 }
 
 export class QuakeNotificationService {
@@ -63,9 +87,10 @@ export class QuakeNotificationService {
       return;
     }
 
-    const embed = buildQuakeEmbed(event, imageUrl);
-    const renderHash = createHash("sha256").update(JSON.stringify(embed.toJSON())).digest("hex");
     const existing = await this.notifications.load(event.id, guildId);
+    const updateReason = determineUpdateReason(event, existing, imageUrl);
+    const embed = buildQuakeEmbed(event, imageUrl, updateReason);
+    const renderHash = createHash("sha256").update(JSON.stringify(embed.toJSON())).digest("hex");
 
     if (existing && existing.lastRenderHash === renderHash && existing.imageUrl === imageUrl) {
       return;

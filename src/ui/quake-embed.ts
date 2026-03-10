@@ -112,7 +112,11 @@ function getEmbedColor(event: QuakeEvent): number {
   return 0x1c7ed6;
 }
 
-export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): EmbedBuilder {
+export function buildQuakeEmbed(
+  event: QuakeEvent,
+  imageUrl: string | null,
+  updateReason: string = "情報更新"
+): EmbedBuilder {
   const title = event.status === "detected" ? "地震速報" : "地震情報";
   const embed = new EmbedBuilder()
     .setTitle(title)
@@ -125,6 +129,7 @@ export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): Emb
       { name: "深さ", value: formatDepth(event.depthKm), inline: true },
       { name: "津波", value: formatTsunamiStatus(event.tsunamiStatus), inline: true },
       { name: "状態", value: formatStatusLabel(event), inline: true },
+      { name: "更新内容", value: updateReason, inline: true },
       { name: "ソース", value: event.sourcesSeen.join(", "), inline: true }
     )
     .setFooter({ text: `event_id: ${event.id}` })
