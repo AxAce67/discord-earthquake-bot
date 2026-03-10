@@ -73,23 +73,35 @@ function formatStatusLabel(event: QuakeEvent): string {
 }
 
 function getEmbedColor(event: QuakeEvent): number {
-  if (event.status === "image_unavailable") {
+  if (event.maxIntensity === null) {
     return 0x868e96;
   }
 
-  if (event.status === "final") {
-    return 0xd62828;
+  if (event.maxIntensity >= 60) {
+    return 0x9c1c1c;
   }
 
-  if (event.status === "detailed") {
-    if (event.issueType === "Destination" || event.issueType === "ScaleAndDestination") {
-      return 0x1971c2;
-    }
-
-    return 0xe67700;
+  if (event.maxIntensity >= 50) {
+    return 0xc92a2a;
   }
 
-  return 0xff8c00;
+  if (event.maxIntensity >= 45) {
+    return 0xd9480f;
+  }
+
+  if (event.maxIntensity >= 40) {
+    return 0xf08c00;
+  }
+
+  if (event.maxIntensity >= 30) {
+    return 0xf59f00;
+  }
+
+  if (event.maxIntensity >= 20) {
+    return 0x2b8a3e;
+  }
+
+  return 0x1c7ed6;
 }
 
 export function buildQuakeEmbed(event: QuakeEvent, imageUrl: string | null): EmbedBuilder {
